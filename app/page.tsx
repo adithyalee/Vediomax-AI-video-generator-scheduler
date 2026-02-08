@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Video, Calendar, Upload, Zap, CheckCircle, ArrowRight, Play } from "lucide-react";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
@@ -27,10 +28,24 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4 hidden sm:block">
-              Log in
-            </Link>
-            <Button>Get Started</Button>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="ghost" className="text-sm font-medium hover:text-white text-slate-200">
+                  Log in
+                </Button>
+              </SignInButton>
+              <SignInButton mode="modal">
+                <Button>Get Started</Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/dashboard">
+                <Button variant="ghost" className="text-sm font-medium hover:text-white text-slate-200">
+                  Dashboard
+                </Button>
+              </Link>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       </header>
@@ -54,9 +69,20 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full justify-center pt-4">
-              <Button size="lg" className="h-12 px-8 text-lg gap-2 bg-white text-slate-900 hover:bg-white/90">
-                Start Creating Free <ArrowRight className="h-4 w-4" />
-              </Button>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button size="lg" className="h-12 px-8 text-lg gap-2 bg-white text-slate-900 hover:bg-white/90">
+                    Start Creating Free <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <Button size="lg" className="h-12 px-8 text-lg gap-2 bg-white text-slate-900 hover:bg-white/90">
+                    Go to Dashboard <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </SignedIn>
               <Button size="lg" variant="outline" className="h-12 px-8 text-lg gap-2 border-white/20 hover:bg-white/10 hover:text-white">
                 <Play className="h-4 w-4" /> Watch Demo
               </Button>
@@ -131,9 +157,20 @@ export default function Home() {
                 <p className="mx-auto max-w-2xl text-lg text-white/80">
                   Join 10,000+ creators using Vediomax to scale their content production. Start your free trial today.
                 </p>
-                <Button size="lg" variant="secondary" className="h-12 px-8 text-lg font-semibold bg-white text-blue-600 hover:bg-white/90">
-                  Get Started for Free
-                </Button>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <Button size="lg" variant="secondary" className="h-12 px-8 text-lg font-semibold bg-white text-blue-600 hover:bg-white/90">
+                      Get Started for Free
+                    </Button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <Link href="/dashboard">
+                    <Button size="lg" variant="secondary" className="h-12 px-8 text-lg font-semibold bg-white text-blue-600 hover:bg-white/90">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                </SignedIn>
                 <p className="text-sm text-white/60">No credit card required • Cancel anytime</p>
               </div>
             </div>
