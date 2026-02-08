@@ -45,10 +45,12 @@ export function Sidebar() {
 
             {/* CREATE BUTTON */}
             <div className="px-6 pb-4">
-                <Button className="w-full justify-start gap-2 text-md font-semibold h-12 bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
-                    <Plus className="h-5 w-5" />
-                    Create New Series
-                </Button>
+                <Link href="/dashboard/create">
+                    <Button className="w-full justify-start gap-2 text-md font-semibold h-12 bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
+                        <Plus className="h-5 w-5" />
+                        Create New Series
+                    </Button>
+                </Link>
             </div>
 
             {/* NAVIGATION */}
