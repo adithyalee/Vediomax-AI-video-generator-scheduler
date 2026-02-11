@@ -1,46 +1,99 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+
 import { cn } from '@/lib/utils';
 import { WizardFooter } from '@/components/WizardFooter';
 // Import steps
 import { StepTopic } from './components/StepTopic';
 import { StepLanguage } from './components/StepLanguage';
 import { StepMusic } from './components/StepMusic';
+import { StepStyle } from './components/StepStyle';
+import { StepCaption } from './components/StepCaption';
+import { StepReview } from './components/StepReview';
+import { WizardData } from './types';
+import { scheduleSeries, getSeriesById, updateSeries } from './actions';
+import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+
 
 const STEPS = [
     { label: 'Topic', number: 1 },
     { label: 'Language', number: 2 },
     { label: 'Music', number: 3 },
-    { label: 'Image', number: 4 },
-    { label: 'Captions', number: 5 },
-    { label: 'Review', number: 6 },
+    { label: 'Style', number: 4 },
+    { label: 'Caption', number: 5 },
+    { label: 'Schedule', number: 6 },
 ];
 
-export interface WizardData {
-    topic: string;
-    customTopic: string;
-    language: string;
-    voice: string;
-    music: string[];
-}
 
 export default function CreateSeriesPage() {
+    const searchParams = useSearchParams();
+    const seriesId = searchParams.get('id');
+
     const [currentStep, setCurrentStep] = useState(1);
+    const [isPending, startTransition] = React.useTransition();
+    const [isLoadingData, setIsLoadingData] = useState(false);
+
+    // Initial State
     const [wizardData, setWizardData] = useState<WizardData>({
         topic: '',
         customTopic: '',
         language: '',
         voice: '',
         music: [],
+        image: '',
+        caption: '',
+        seriesName: '',
+        duration: '',
+        platform: '',
+        scheduleTime: '',
     });
 
+    // Fetch data if editing
+    useEffect(() => {
+        if (seriesId) {
+            setIsLoadingData(true);
+            getSeriesById(seriesId)
+                .then(data => {
+                    if (data) {
+                        setWizardData({
+                            topic: data.topic,
+                            customTopic: data.custom_topic || '',
+                            language: data.language,
+                            voice: data.voice,
+                            music: data.music || [],
+                            image: data.style_id,
+                            caption: data.caption_style,
+                            seriesName: data.series_name,
+                            duration: data.duration,
+                            platform: data.platform,
+                            scheduleTime: data.schedule_time || '',
+                        });
+                    }
+                })
+                .catch(err => console.error("Failed to load series:", err))
+                .finally(() => setIsLoadingData(false));
+        }
+    }, [seriesId]);
+
     const handleNext = () => {
-        console.log("Current Data:", wizardData);
         if (currentStep < 6) {
             setCurrentStep(prev => prev + 1);
         } else {
-            console.log("Creating Series...", wizardData);
+            // Final Submission (Create or Update)
+            startTransition(async () => {
+                try {
+                    if (seriesId) {
+                        await updateSeries(seriesId, wizardData);
+                    } else {
+                        await scheduleSeries(wizardData);
+                    }
+                } catch (error) {
+                    console.error("Failed to save series:", error);
+                    // Optionally add toast here
+                }
+            });
         }
     };
 
@@ -55,17 +108,25 @@ export default function CreateSeriesPage() {
     const isStep1Valid = !!wizardData.topic && (wizardData.topic !== 'custom' || !!wizardData.customTopic.trim());
     const isStep2Valid = !!wizardData.language && !!wizardData.voice;
     const isStep3Valid = (wizardData.music || []).length > 0;
+    const isStep4Valid = !!wizardData.image;
+    const isStep5Valid = !!wizardData.caption;
+    const isStep6Valid = !!wizardData.seriesName && !!wizardData.duration && !!wizardData.platform && !!wizardData.scheduleTime;
 
     let isNextDisabled = true;
     if (currentStep === 1) isNextDisabled = !isStep1Valid;
     if (currentStep === 2) isNextDisabled = !isStep2Valid;
     if (currentStep === 3) isNextDisabled = !isStep3Valid;
+    if (currentStep === 4) isNextDisabled = !isStep4Valid;
+    if (currentStep === 5) isNextDisabled = !isStep5Valid;
+    if (currentStep === 6) isNextDisabled = !isStep6Valid;
 
     return (
         <div className="flex flex-col h-full max-w-5xl mx-auto">
             {/* HEADER & PROGRESS */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-6">Create New Series</h1>
+                <h1 className="text-3xl font-bold text-white mb-6">
+                    {seriesId ? 'Edit Series' : 'Create New Series'}
+                </h1>
 
                 {/* Horizontal Stepper */}
                 <div className="relative mb-10">
@@ -110,22 +171,26 @@ export default function CreateSeriesPage() {
                     <StepMusic wizardData={wizardData} setWizardData={setWizardData} />
                 )}
 
-                {/* FUTURE STEPS PLACEHOLDER */}
-                {currentStep > 3 && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold text-white">Step {currentStep}</h2>
-                            <p className="text-slate-400">Coming soon!</p>
-                        </div>
-                    </div>
+                {currentStep === 4 && (
+                    <StepStyle wizardData={wizardData} setWizardData={setWizardData} />
+                )}
+
+                {currentStep === 5 && (
+                    <StepCaption wizardData={wizardData} setWizardData={setWizardData} />
+                )}
+
+                {currentStep === 6 && (
+                    <StepReview wizardData={wizardData} setWizardData={setWizardData} />
                 )}
             </div>
 
             <WizardFooter
                 currentStep={currentStep}
                 isNextDisabled={isNextDisabled}
+                isPending={isPending}
                 onNext={handleNext}
                 onBack={handleBack}
+                nextLabel={currentStep === 6 ? (seriesId ? 'Update Series' : 'Schedule') : 'Continue'}
             />
         </div>
     );
