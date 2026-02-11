@@ -125,57 +125,104 @@ export function StepLanguage({ wizardData, setWizardData }: StepLanguageProps) {
                             <p className="text-slate-500">No voices available for this language.</p>
                         </div>
                     ) : (
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            {availableVoices.map((voice: any) => (
-                                <div
-                                    key={voice.modelName}
-                                    onClick={() => setWizardData((prev: any) => ({ ...prev, voice: voice.modelName }))}
-                                    className={cn(
-                                        "relative p-4 rounded-xl border transition-all cursor-pointer group hover:border-indigo-500/50",
-                                        wizardData.voice === voice.modelName
-                                            ? "bg-indigo-500/10 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.2)]"
-                                            : "bg-slate-900 border-white/10"
-                                    )}
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className={cn(
-                                                "w-8 h-8 rounded-full flex items-center justify-center",
-                                                voice.gender === 'male' ? "bg-blue-500/20 text-blue-400" : "bg-pink-500/20 text-pink-400"
-                                            )}>
-                                                <Volume2 className="w-4 h-4" />
+                            {availableVoices.map((voice: any) => {
+                                const isSelected = wizardData.voice === voice.modelName;
+                                const isPlaying = playingVoice === voice.preview;
+
+                                return (
+                                    <motion.div
+                                        key={voice.modelName}
+                                        onClick={() => setWizardData((prev: any) => ({ ...prev, voice: voice.modelName }))}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={cn(
+                                            "relative p-4 rounded-xl border transition-all cursor-pointer group overflow-hidden",
+                                            isSelected
+                                                ? "bg-indigo-500/10 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                                                : "bg-slate-900 border-white/10 hover:border-indigo-500/50 hover:bg-slate-800"
+                                        )}
+                                    >
+                                        <div className="flex justify-between items-start mb-3 relative z-10">
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                                    voice.gender === 'male' ? "bg-blue-500/20 text-blue-400" : "bg-pink-500/20 text-pink-400",
+                                                    isSelected && "bg-white text-indigo-600"
+                                                )}>
+                                                    <Volume2 className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h4 className={cn(
+                                                        "font-bold text-sm capitalize transition-colors",
+                                                        isSelected ? "text-white" : "text-slate-200"
+                                                    )}>
+                                                        {voice.modelName.split('-')[2] || voice.modelName}
+                                                    </h4>
+                                                    <span className="text-xs text-slate-500 capitalize">{voice.gender}</span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-white text-sm capitalize">{voice.modelName.split('-')[2] || voice.modelName}</h4>
-                                                <span className="text-xs text-slate-500 capitalize">{voice.gender}</span>
-                                            </div>
+
+                                            {/* PREVIEW BUTTON */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePlayPreview(voice.preview);
+                                                }}
+                                                className={cn(
+                                                    "w-8 h-8 rounded-full flex items-center justify-center transition-all border",
+                                                    isPlaying
+                                                        ? "bg-indigo-500 border-indigo-500 text-white animate-pulse"
+                                                        : "bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-indigo-500 hover:border-indigo-500"
+                                                )}
+                                            >
+                                                {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                                            </button>
                                         </div>
 
-                                        {/* PREVIEW BUTTON */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handlePlayPreview(voice.preview);
-                                            }}
-                                            className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                                        >
-                                            {playingVoice === voice.preview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                        </button>
-                                    </div>
+                                        {/* Waveform Visualization (Fake) */}
+                                        <div className="flex items-center justify-center gap-0.5 h-6 mb-2 opacity-50 relative z-10">
+                                            {[...Array(20)].map((_, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    className={cn(
+                                                        "w-1 rounded-full",
+                                                        isSelected ? "bg-indigo-400" : "bg-slate-600"
+                                                    )}
+                                                    animate={{
+                                                        height: isPlaying ? [5, Math.random() * 15 + 5, 5] : 4
+                                                    }}
+                                                    transition={{
+                                                        duration: 0.5,
+                                                        repeat: isPlaying ? Infinity : 0,
+                                                        delay: i * 0.05
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
 
-                                    <div className="flex justify-between items-center mt-2">
-                                        <span className="text-[10px] uppercase tracking-wider text-slate-600 border border-slate-700 px-2 py-0.5 rounded">
-                                            {selectedLanguageObj?.modelName}
-                                        </span>
-                                        {wizardData.voice === voice.modelName && (
-                                            <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg">
-                                                <span className="text-[10px] text-white font-bold">✓</span>
-                                            </div>
+                                        <div className="flex justify-between items-center mt-2 relative z-10">
+                                            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                                                {selectedLanguageObj?.modelName}
+                                            </span>
+                                            {isSelected && (
+                                                <div className="flex items-center gap-1 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                                    <span className="text-[10px] text-indigo-300 font-bold">Selected</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Background Glow */}
+                                        {isSelected && (
+                                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
                                         )}
-                                    </div>
-                                </div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
+
                     )}
                 </div>
             </div>

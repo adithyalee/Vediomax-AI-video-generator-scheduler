@@ -111,35 +111,59 @@ export function StepTopic({ wizardData, setWizardData }: StepTopicProps) {
                         animate={{ opacity: 1, y: 0 }}
                         className="h-96 overflow-y-auto pr-2 custom-scrollbar"
                     >
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
-                            {AVAILABLE_NICHES.map((niche) => (
-                                <div
-                                    key={niche.id}
-                                    onClick={() => setWizardData((prev: any) => ({ ...prev, topic: niche.id }))}
-                                    className={cn(
-                                        "relative cursor-pointer group rounded-xl border-2 p-5 transition-all duration-200 hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]",
-                                        wizardData.topic === niche.id
-                                            ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
-                                            : "border-white/5 bg-slate-900/50 hover:bg-slate-900"
-                                    )}
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className={cn("p-3 rounded-lg mt-1", niche.bg)}>
-                                            <niche.icon className={cn("w-5 h-5", niche.color)} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-white text-lg">{niche.label}</h3>
-                                            <p className="text-sm text-slate-400 mt-1 leading-relaxed">{niche.description}</p>
-                                        </div>
-                                        {wizardData.topic === niche.id && (
-                                            <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg">
-                                                <span className="text-[10px] text-white font-bold">✓</span>
-                                            </div>
+                            {AVAILABLE_NICHES.map((niche) => {
+                                const isSelected = wizardData.topic === niche.id;
+                                return (
+                                    <motion.div
+                                        key={niche.id}
+                                        onClick={() => setWizardData((prev: any) => ({ ...prev, topic: niche.id }))}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className={cn(
+                                            "relative cursor-pointer group rounded-xl p-5 transition-all duration-300 overflow-hidden",
+                                            isSelected
+                                                ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-2 border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.3)]"
+                                                : "bg-slate-900 border border-white/10 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10"
                                         )}
-                                    </div>
-                                </div>
-                            ))}
+                                    >
+                                        <div className="flex items-start gap-4 relative z-10">
+                                            <div className={cn(
+                                                "p-3 rounded-lg mt-1 transition-colors duration-300",
+                                                isSelected ? "bg-indigo-500 text-white" : niche.bg
+                                            )}>
+                                                <niche.icon className={cn(
+                                                    "w-6 h-6 transition-colors duration-300",
+                                                    isSelected ? "text-white" : niche.color
+                                                )} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className={cn(
+                                                    "font-bold text-lg transition-colors duration-300",
+                                                    isSelected ? "text-white" : "text-slate-200 group-hover:text-white"
+                                                )}>
+                                                    {niche.label}
+                                                </h3>
+                                                <p className="text-sm text-slate-400 mt-1 leading-relaxed">{niche.description}</p>
+                                            </div>
+                                            {isSelected && (
+                                                <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg animate-in zoom-in spin-in-90 duration-300">
+                                                    <span className="text-xs text-white font-bold">✓</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Background Glow Effect */}
+                                        <div className={cn(
+                                            "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                                            "bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full duration-1000 ease-in-out"
+                                        )} />
+                                    </motion.div>
+                                );
+                            })}
                         </div>
+
                     </motion.div>
                 ) : (
                     <motion.div

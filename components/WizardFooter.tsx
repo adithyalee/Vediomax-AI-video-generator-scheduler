@@ -1,22 +1,24 @@
-'use client';
-
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 interface WizardFooterProps {
     currentStep: number;
     isNextDisabled: boolean;
+    isPending?: boolean;
     onNext: () => void;
     onBack: () => void;
+    nextLabel?: string;
 }
 
 export function WizardFooter({
     currentStep,
     isNextDisabled,
+    isPending = false,
     onNext,
-    onBack
+    onBack,
+    nextLabel
 }: WizardFooterProps) {
     return (
         <div className="mt-12 flex justify-between pt-6 border-t border-white/10">
@@ -30,6 +32,7 @@ export function WizardFooter({
                 <Button
                     variant="ghost"
                     onClick={onBack}
+                    disabled={isPending}
                     className="text-slate-400 hover:text-white hover:bg-white/10 gap-2"
                 >
                     <ChevronLeft className="w-4 h-4" /> Back
@@ -40,15 +43,24 @@ export function WizardFooter({
                 size="lg"
                 className={cn(
                     "gap-2 px-8 transition-all duration-300",
-                    isNextDisabled
+                    isNextDisabled || isPending
                         ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                         : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
                 )}
-                disabled={isNextDisabled}
+                disabled={isNextDisabled || isPending}
                 onClick={onNext}
             >
-                {currentStep === 6 ? 'Create Series' : 'Continue'}
-                <ChevronRight className="w-4 h-4" />
+                {isPending ? (
+                    <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                    </>
+                ) : (
+                    <>
+                        {nextLabel || (currentStep === 6 ? 'Create Series' : 'Continue')}
+                        <ChevronRight className="w-4 h-4" />
+                    </>
+                )}
             </Button>
         </div>
     );

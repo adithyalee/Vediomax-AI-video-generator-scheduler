@@ -1,6 +1,7 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { syncUserToSupabase } from '@/actions/user';
+import { SeriesList } from './components/SeriesList';
 
 export default async function DashboardPage() {
     const user = await currentUser();
@@ -29,10 +30,7 @@ export default async function DashboardPage() {
                     </div>
                 )}
 
-                <div className="rounded-lg border border-white/10 bg-slate-900/50 p-8 text-center text-slate-400 shadow-sm">
-                    <h3 className="text-lg font-medium text-white">No Series Created</h3>
-                    <p className="mt-2 text-slate-400">You haven't created any video series yet. Click the button in the sidebar to get started.</p>
-                </div>
+                <SeriesList />
             </div>
         </div>
     );
