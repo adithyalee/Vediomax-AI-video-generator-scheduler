@@ -36,10 +36,36 @@ export function SeriesCard({ project, onDelete, onTogglePause }: SeriesCardProps
     const styleObj = VideoStyles.find(s => s.id === project.style_id);
     const thumbnail = styleObj?.image || '/Styles/realistic.png'; // Fallback
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         setIsGenerating(true);
-        // Simulate generation trigger - in real app call API
-        setTimeout(() => setIsGenerating(false), 2000);
+        console.log("Starting generation for project:", project.id); // Debug Log 1
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ projectId: project.id }),
+            });
+
+            console.log("API Response status:", response.status); // Debug Log 2
+
+            if (!response.ok) {
+                const errorData = await response.json(); // Try to get error details
+                console.error("API Error details:", errorData);
+                throw new Error(errorData.error || 'Failed to start generation');
+            }
+
+            const data = await response.json();
+            console.log("Generation started successfully:", data); // Debug Log 3
+            // Optional: Show success toast here
+        } catch (error) {
+            console.error("Generation failed catch block:", error);
+            // Optional: Show error toast here
+        } finally {
+            setIsGenerating(false);
+            console.log("Generation process finished (finally block)"); // Debug Log 4
+        }
     };
 
     return (
