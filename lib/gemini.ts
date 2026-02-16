@@ -23,9 +23,10 @@ export async function generateVideoScript(topic: string, duration: string, style
     Constraints:
     - Duration: ${duration}
     - Style: ${style}
-    - If duration is 30-40 seconds, generate 4-5 image prompts.
-    - If duration is 60-70 seconds, generate 5-6 image prompts.
-    - The script should be natural, engaging, and ready for voiceover.
+    - If duration is 30-40 seconds, the script MUST be at least 150 words.
+    - If duration is 60-70 seconds, the script MUST be at least 300 words.
+    - Generate 4-7 detailed image prompts that match the script's narrative.
+    - The script should be engaging, natural, and ready for voiceover.
     
     Output Format: JSON only. strictly no markdown.
     {
