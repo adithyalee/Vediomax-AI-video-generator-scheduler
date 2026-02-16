@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { VideoProject } from '../types';
 import { SeriesCard } from './SeriesCard';
+import { TestCard } from './TestCard';
 import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -79,6 +80,7 @@ export function SeriesList() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <TestCard series={series} />
             {series.map((project: VideoProject) => (
                 <SeriesCard
                     key={project.id}

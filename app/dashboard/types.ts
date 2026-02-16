@@ -8,6 +8,10 @@ export interface VideoProject {
     style_id: string; // from 'style_id'
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'paused' | 'active';
     video_url?: string;
+    voice_url?: string;
+    script_data?: any;
+    captions?: any[];
+    image_urls?: string[];
     // Add other fields as needed for display
     platform: string;
     duration: string;
