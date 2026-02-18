@@ -99,7 +99,10 @@ export const generateVideo = inngest.createFunction(
     // Step 3: Voice — logic split to avoid nested steps
     const voice = await step.run("generate-voice", async () => {
       // 3.1 Use existing DB field if available (and not forced)
-      if (!force && project.voice_url) return { audioUrl: String(project.voice_url) };
+      if (!force && project.voice_url) {
+        console.log("Reusing existing voice URL:", project.voice_url);
+        return { audioUrl: String(project.voice_url) };
+      }
 
       // 3.2 Reuse Only Mode: Fetch from Storage (no paid API)
       if (reuseOnly) {
@@ -171,6 +174,7 @@ export const generateVideo = inngest.createFunction(
     const images = await step.run("generate-images", async () => {
       // 5.1 Use existing DB field
       if (!force && Array.isArray(project.image_urls) && project.image_urls.length > 0) {
+        console.log("Reusing existing image URLs:", project.image_urls.length);
         return { imageUrls: project.image_urls as string[] };
       }
 
@@ -223,6 +227,98 @@ export const generateVideo = inngest.createFunction(
       return { imageUrls };
     });
 
+    // Step 5.5: Render Video (Remotion Lambda)
+    const video = await step.run("render-video", async () => {
+      if (reuseOnly) {
+        console.log("Skipping render in reuse mode");
+        return { videoUrl: null };
+      }
+
+      const region = process.env.REMOTION_AWS_REGION || "us-east-1";
+      const serveUrl = process.env.REMOTION_SERVE_URL;
+      const functionName = process.env.REMOTION_FUNCTION_NAME;
+
+      if (!serveUrl || !functionName) {
+        console.warn("Missing REMOTION_SERVE_URL or REMOTION_FUNCTION_NAME. Skipping rendering.");
+        return { videoUrl: null };
+      }
+
+      // Dynamic import to avoid build issues if package specific constraints
+      const { renderMediaOnLambda, getRenderProgress } = await import('@remotion/lambda/client');
+
+      // Calculate duration based on captions (last word end time)
+      // Default to 10s (300 frames) if no captions
+      let durationInFrames = 300;
+      if (captions.captions && captions.captions.length > 0) {
+        const lastWord = captions.captions[captions.captions.length - 1];
+        const endSeconds = lastWord.end || 0;
+        // Add 2 seconds buffer after speech ends
+        durationInFrames = Math.ceil((endSeconds + 2) * 30);
+      }
+      // Ensure minimum duration of 5 seconds
+      durationInFrames = Math.max(durationInFrames, 150);
+
+      const inputProps = {
+        imageUrls: images.imageUrls,
+        audioUrl: voice.audioUrl,
+        captions: captions.captions,
+        script: scriptData,
+        durationInFrames // Pass duration in props for calculateMetadata
+      };
+
+      console.log("Starting Lambda Render...");
+
+      const { renderId, bucketName } = await renderMediaOnLambda({
+        region: region as any,
+        functionName,
+        serveUrl,
+        composition: "Main",
+        inputProps,
+        codec: "h264",
+        maxRetries: 1,
+        concurrencyPerLambda: 1,
+        framesPerLambda: 2000,
+      });
+
+      console.log(`Render started: ${renderId} in ${bucketName}`);
+
+      // Poll for completion
+      let videoUrl: string | null = null;
+      let attempts = 0;
+
+      while (!videoUrl && attempts < 60) { // Timeout after ~5 minutes
+        await new Promise(r => setTimeout(r, 5000));
+        attempts++;
+
+        const progress = await getRenderProgress({
+          renderId,
+          bucketName,
+          functionName,
+          region: region as any,
+        });
+
+        if (progress.fatalErrorEncountered) {
+          throw new Error(`Render failed: ${progress.errors[0].message}`);
+        }
+
+        if (progress.done) {
+          videoUrl = progress.outputFile as string;
+        } else {
+          console.log(`Rendering... ${Math.round(progress.overallProgress * 100)}%`);
+        }
+      }
+
+      if (!videoUrl) {
+        throw new Error("Render timed out");
+      }
+
+      console.log("Render complete:", videoUrl);
+      await saveAsset("video", null, videoUrl, { renderId });
+
+      return { videoUrl };
+    });
+
+
     // Step 6: Save to DB (split updates + retry)
     const savedProject = await step.run("save-project", async () => {
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -245,7 +341,8 @@ export const generateVideo = inngest.createFunction(
         const patch: any = {
           voice_url: voice.audioUrl,
           image_urls: images.imageUrls,
-          status: "processing",
+          status: video.videoUrl ? "completed" : "processing", // Only complete if video rendered
+          video_url: video.videoUrl
         };
         // Only save script_data if we actually have a script (avoid overwriting in reuseOnly stub)
         if (scriptData?.script && String(scriptData.script).trim()) patch.script_data = scriptData;
@@ -259,14 +356,17 @@ export const generateVideo = inngest.createFunction(
         if (error) throw new Error(error.message);
       });
 
-      await runWithRetry("final-status", async () => {
-        const { error } = await supabaseAdmin.from("video_projects").update({ status: "completed" }).eq("id", projectId);
-        if (error) throw new Error(error.message);
-      });
+      // Status update logic moved above
+      if (video.videoUrl) {
+        await runWithRetry("final-status", async () => {
+          const { error } = await supabaseAdmin.from("video_projects").update({ status: "completed" }).eq("id", projectId);
+          if (error) throw new Error(error.message);
+        });
+      }
 
       return { status: "completed" };
     });
 
-    return { success: true, projectId, script: scriptData, voice, captions, images, savedProject };
+    return { success: true, projectId, script: scriptData, voice, captions, images, video, savedProject };
   }
 );
