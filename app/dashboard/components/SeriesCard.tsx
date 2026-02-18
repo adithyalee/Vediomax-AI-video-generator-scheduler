@@ -4,6 +4,7 @@ import { VideoProject } from '../types';
 import { VideoStyles } from '../create/data/styles';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,8 @@ export function SeriesCard({ project, onDelete, onTogglePause }: SeriesCardProps
     const styleObj = VideoStyles.find(s => s.id === project.style_id);
     const thumbnail = styleObj?.image || '/Styles/realistic.png'; // Fallback
 
+    const router = useRouter();
+
     const handleGenerate = async () => {
         setIsGenerating(true);
         console.log("Starting generation for project:", project.id); // Debug Log 1
@@ -58,7 +61,10 @@ export function SeriesCard({ project, onDelete, onTogglePause }: SeriesCardProps
 
             const data = await response.json();
             console.log("Generation started successfully:", data); // Debug Log 3
-            // Optional: Show success toast here
+
+            // Redirect to videos page to show progress
+            router.push('/dashboard/videos');
+
         } catch (error) {
             console.error("Generation failed catch block:", error);
             // Optional: Show error toast here

@@ -6,9 +6,10 @@ import { generateCaptions } from "@/lib/caption";
 import { generateImages } from "@/lib/image";
 import { Languages } from "@/app/dashboard/create/data/voices";
 
-type AnyProject = any;
+// Define a more specific type if possible, or keep as any for now but cleaner
+type VideoProject = any;
 
-function normalizeScriptData(raw: any, project: AnyProject): VideoScript | null {
+function normalizeScriptData(raw: any, project: VideoProject): VideoScript | null {
   if (!raw) return null;
   let obj: any = raw;
   if (typeof raw === "string") {
@@ -29,7 +30,7 @@ function normalizeScriptData(raw: any, project: AnyProject): VideoScript | null 
   };
 }
 
-function languageCodeFor(project: AnyProject): string {
+function languageCodeFor(project: VideoProject): string {
   const lang = project?.language || "English";
   const cfg = Languages.find((l: any) => l.language === lang);
   return cfg?.modelLangCode ?? "en-US";
@@ -41,6 +42,22 @@ export const generateVideo = inngest.createFunction(
   async ({ event, step }) => {
     const { projectId, force = false, reuseOnly = false } = (event.data as any) ?? {};
 
+    // Helper to save generated assets
+    const saveAsset = async (type: 'script' | 'voice' | 'image' | 'captions' | 'video', content: string | null, url: string | null, metadata: any = {}) => {
+      try {
+        await supabaseAdmin.from("video_assets").insert({
+          project_id: projectId,
+          asset_type: type,
+          content,
+          url,
+          metadata
+        });
+      } catch (err) {
+        console.error(`Failed to save asset (${type}):`, err);
+        // Don't fail the whole generation if tracking fails
+      }
+    };
+
     // Step 1: Fetch project from Supabase
     const project = await step.run("fetch-project-data", async () => {
       const { data, error } = await supabaseAdmin
@@ -50,7 +67,7 @@ export const generateVideo = inngest.createFunction(
         .single();
 
       if (error) throw new Error(`Failed to fetch project: ${error.message}`);
-      return data as AnyProject;
+      return data as VideoProject;
     });
 
     // Mark as processing
@@ -66,53 +83,71 @@ export const generateVideo = inngest.createFunction(
 
       if (reuseOnly) {
         // In test mode we do NOT call Gemini; return a stub (won't overwrite DB because script is empty)
-        return { videoTitle: project.series_name ?? "", script: "", imagePrompts: [] };
+        return { videoTitle: project.series_name ?? "", script: "", imagePrompts: [] as string[] };
       }
 
       const topic = project.topic === "custom" ? project.custom_topic || project.topic : project.topic;
       const durationString = `${project.duration} seconds`;
-      return await generateVideoScript(topic, durationString, project.style_id);
+      const generated = await generateVideoScript(topic, durationString, project.style_id);
+
+      // Save newly generated script
+      await saveAsset("script", JSON.stringify(generated), null, { source: "gemini", model: "gemini-flash-latest" });
+
+      return generated;
     });
 
-    // Step 3: Voice — reuse DB field, else hydrate from Storage in reuseOnly, else generate (paid)
+    // Step 3: Voice — logic split to avoid nested steps
     const voice = await step.run("generate-voice", async () => {
+      // 3.1 Use existing DB field if available (and not forced)
       if (!force && project.voice_url) return { audioUrl: String(project.voice_url) };
 
+      // 3.2 Reuse Only Mode: Fetch from Storage (no paid API)
       if (reuseOnly) {
-        const hydrated = await step.run("hydrate-voice-url-from-storage", async () => {
-          const { data, error } = await supabaseAdmin.storage.from("generated-voice").list(projectId, { limit: 100 });
-          if (error) throw new Error(`Failed to list generated-voice: ${error.message}`);
-          const files = (data || [])
-            .filter((f: any) => typeof f?.name === "string" && f.name.toLowerCase().endsWith(".mp3"))
-            .sort((a: any, b: any) => {
-              const ta = new Date(a.updated_at || a.created_at || 0).getTime();
-              const tb = new Date(b.updated_at || b.created_at || 0).getTime();
-              return tb - ta;
-            });
-          const latest = files[0];
-          if (!latest?.name) return null;
-          const filePath = `${projectId}/${latest.name}`;
-          const { data: pub } = supabaseAdmin.storage.from("generated-voice").getPublicUrl(filePath);
-          const audioUrl = pub.publicUrl;
-          const { error: updErr } = await supabaseAdmin.from("video_projects").update({ voice_url: audioUrl }).eq("id", projectId);
-          if (updErr) throw new Error(`Failed to persist voice_url: ${updErr.message}`);
-          return audioUrl;
-        });
+        // Direct Supabase call (no nested step.run)
+        const { data, error } = await supabaseAdmin.storage.from("generated-voice").list(projectId, { limit: 100 });
+        if (error) throw new Error(`Failed to list generated-voice: ${error.message}`);
 
-        if (hydrated) return { audioUrl: hydrated };
-        throw new Error("TEST mode: voice_url is missing (and no voice file found in Storage).");
+        const files = (data || [])
+          .filter((f: any) => typeof f?.name === "string" && f.name.toLowerCase().endsWith(".mp3"))
+          .sort((a: any, b: any) => {
+            const ta = new Date(a.updated_at || a.created_at || 0).getTime();
+            const tb = new Date(b.updated_at || b.created_at || 0).getTime();
+            return tb - ta;
+          });
+
+        const latest = files[0];
+        if (!latest?.name) throw new Error("TEST mode: voice_url is missing (and no voice file found in Storage).");
+
+        const filePath = `${projectId}/${latest.name}`;
+        const { data: pub } = supabaseAdmin.storage.from("generated-voice").getPublicUrl(filePath);
+        const audioUrl = pub.publicUrl;
+
+        // Update DB so next time it's faster
+        const { error: updErr } = await supabaseAdmin.from("video_projects").update({ voice_url: audioUrl }).eq("id", projectId);
+        if (updErr) throw new Error(`Failed to persist voice_url: ${updErr.message}`);
+
+        return { audioUrl };
       }
 
+      // 3.3 Full Generation Mode (Paid API)
       const audioUrl = await generateVoice(
         scriptData.script,
         project.language || "English",
         project.voice || "aura-asteria-en",
         projectId
       );
+
+      // Save newly generated voice
+      await saveAsset("voice", null, audioUrl, {
+        source: "deepgram/fonada",
+        voice: project.voice,
+        language: project.language
+      });
+
       return { audioUrl };
     });
 
-    // Step 4: Captions — reuse DB field, else generate (paid). In reuseOnly, fail if missing.
+    // Step 4: Captions
     const captions = await step.run("generate-captions", async () => {
       if (!force && Array.isArray(project.captions) && project.captions.length > 0) {
         return { captions: project.captions as any[] };
@@ -122,46 +157,69 @@ export const generateVideo = inngest.createFunction(
       }
       const langCode = languageCodeFor(project);
       const words = await generateCaptions(voice.audioUrl, langCode);
+
+      // Save newly generated captions
+      await saveAsset("captions", JSON.stringify(words), null, {
+        source: "deepgram",
+        language: langCode
+      });
+
       return { captions: words };
     });
 
-    // Step 5: Images — reuse DB field, else hydrate from Storage in reuseOnly, else generate (paid)
+    // Step 5: Images
     const images = await step.run("generate-images", async () => {
+      // 5.1 Use existing DB field
       if (!force && Array.isArray(project.image_urls) && project.image_urls.length > 0) {
         return { imageUrls: project.image_urls as string[] };
       }
 
+      // 5.2 Reuse Only Mode: Fetch from Storage
       if (reuseOnly) {
-        const hydrated = await step.run("hydrate-image-urls-from-storage", async () => {
-          const { data, error } = await supabaseAdmin.storage.from("generated-images").list(projectId, { limit: 200 });
-          if (error) throw new Error(`Failed to list generated-images: ${error.message}`);
-          const files = (data || [])
-            .filter((f: any) => typeof f?.name === "string" && /\.(png|jpg|jpeg|webp)$/i.test(f.name))
-            .sort((a: any, b: any) => {
-              const ta = new Date(a.updated_at || a.created_at || 0).getTime();
-              const tb = new Date(b.updated_at || b.created_at || 0).getTime();
-              return tb - ta;
-            });
-          if (!files.length) return null;
-          const picked = files.slice(0, 7).reverse();
-          const urls = picked.map((f: any) => {
-            const filePath = `${projectId}/${f.name}`;
-            const { data: pub } = supabaseAdmin.storage.from("generated-images").getPublicUrl(filePath);
-            return pub.publicUrl;
+        // Direct Supabase call (no nested step.run)
+        const { data, error } = await supabaseAdmin.storage.from("generated-images").list(projectId, { limit: 200 });
+        if (error) throw new Error(`Failed to list generated-images: ${error.message}`);
+
+        const files = (data || [])
+          .filter((f: any) => typeof f?.name === "string" && /\.(png|jpg|jpeg|webp)$/i.test(f.name))
+          .sort((a: any, b: any) => {
+            const ta = new Date(a.updated_at || a.created_at || 0).getTime();
+            const tb = new Date(b.updated_at || b.created_at || 0).getTime();
+            return tb - ta;
           });
-          const { error: updErr } = await supabaseAdmin.from("video_projects").update({ image_urls: urls }).eq("id", projectId);
-          if (updErr) throw new Error(`Failed to persist image_urls: ${updErr.message}`);
-          return urls;
+
+        if (!files.length) throw new Error("TEST mode: image_urls are missing (and no images found in Storage).");
+
+        const picked = files.slice(0, 7).reverse();
+        const urls = picked.map((f: any) => {
+          const filePath = `${projectId}/${f.name}`;
+          const { data: pub } = supabaseAdmin.storage.from("generated-images").getPublicUrl(filePath);
+          return pub.publicUrl;
         });
-        if (hydrated) return { imageUrls: hydrated };
-        throw new Error("TEST mode: image_urls are missing (and no images found in Storage).");
+
+        // Update DB
+        const { error: updErr } = await supabaseAdmin.from("video_projects").update({ image_urls: urls }).eq("id", projectId);
+        if (updErr) throw new Error(`Failed to persist image_urls: ${updErr.message}`);
+
+        return { imageUrls: urls };
       }
 
+      // 5.3 Full Generation Mode (Paid API)
       const replicateToken = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_TOKEN;
       if (!replicateToken) throw new Error("REPLICATE_API_TOKEN is missing in .env.local");
 
       const prompts = (scriptData.imagePrompts?.length ? scriptData.imagePrompts : [scriptData.videoTitle || "cinematic scene"]) as string[];
       const imageUrls = await generateImages(prompts, projectId, replicateToken);
+
+      // Save newly generated images (batch)
+      for (const [i, url] of imageUrls.entries()) {
+        await saveAsset("image", prompts[i] || "", url, {
+          source: "replicate",
+          model: "flux-schnell",
+          index: i
+        });
+      }
+
       return { imageUrls };
     });
 
