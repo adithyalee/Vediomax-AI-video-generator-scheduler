@@ -13,7 +13,7 @@ import { StepCaption } from './components/StepCaption';
 import { StepReview } from './components/StepReview';
 import { WizardData } from './types';
 import { scheduleSeries, getSeriesById, updateSeries } from './actions';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 
@@ -29,6 +29,7 @@ const STEPS = [
 
 export default function CreateSeriesPage() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const seriesId = searchParams.get('id');
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -89,6 +90,8 @@ export default function CreateSeriesPage() {
                     } else {
                         await scheduleSeries(wizardData);
                     }
+                    // Redirect to videos page after success
+                    router.push('/dashboard/videos');
                 } catch (error) {
                     console.error("Failed to save series:", error);
                     // Optionally add toast here

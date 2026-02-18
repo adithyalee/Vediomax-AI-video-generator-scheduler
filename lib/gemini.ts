@@ -40,7 +40,7 @@ export async function generateVideoScript(topic: string, duration: string, style
     `;
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-flash-latest", // Confirmed working model with quota
+    model: "gemini-flash-latest", // Using latest alias which is confirmed to work
     generationConfig: {
       responseMimeType: "application/json"
     }
