@@ -194,9 +194,21 @@ export function SeriesCard({ project, onDelete, onTogglePause }: SeriesCardProps
                         )}
                     </Button>
 
-                    <div className="flex justify-center mt-1">
-                        <Button variant="link" className="text-xs text-slate-500 hover:text-indigo-400 h-auto p-0">
-                            View Generated Videos
+                    <div className="flex justify-center mt-1 gap-4">
+                        <Button
+                            variant="link"
+                            className="text-xs text-slate-500 hover:text-indigo-400 h-auto p-0"
+                            onClick={() => router.push('/dashboard/videos')}
+                        >
+                            View Videos
+                        </Button>
+                        <Button
+                            variant="link"
+                            className="text-xs text-slate-500 hover:text-green-400 h-auto p-0"
+                            onClick={handleGenerate}
+                            disabled={isGenerating}
+                        >
+                            Test Workflow
                         </Button>
                     </div>
                 </div>

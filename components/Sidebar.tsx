@@ -11,7 +11,8 @@ import {
     Settings,
     ShieldAlert,
     User,
-    Plus
+    Plus,
+    CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ const sidebarItems = [
     { icon: BookOpen, label: 'Guides', href: '/dashboard/guides' },
     { icon: Building2, label: 'Buildings', href: '/dashboard/buildings' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    { icon: CreditCard, label: 'Billing', href: '/dashboard/billing' },
 ];
 
 export function Sidebar() {
