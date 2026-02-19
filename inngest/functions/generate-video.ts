@@ -5,6 +5,9 @@ import { generateVoice } from "@/lib/voice";
 import { generateCaptions } from "@/lib/caption";
 import { generateImages } from "@/lib/image";
 import { Languages } from "@/app/dashboard/create/data/voices";
+import { plunk } from "@/lib/plunk"; // [NEW]
+import { VideoReadyEmail } from "@/components/emails/VideoReadyEmail"; // [NEW]
+import { render } from "@react-email/components"; // [NEW]
 
 // Define a more specific type if possible, or keep as any for now but cleaner
 type VideoProject = any;
@@ -243,6 +246,23 @@ export const generateVideo = inngest.createFunction(
         return { videoUrl: null };
       }
 
+      console.log("DEBUG: AWS Config Check");
+      console.log("Region:", region);
+
+      // Retrieve keys from process.env (loaded from .env.local)
+      const keyId = process.env.AWS_ACCESS_KEY_ID;
+      const secret = process.env.AWS_SECRET_ACCESS_KEY;
+
+      console.log("AccessKeyId:", keyId ? keyId.slice(0, 5) + "..." : "MISSING");
+      // Force-set REMOTION_ prefixed env vars to ensure Remotion Lambda picks them up
+      if (keyId && secret) {
+        process.env.REMOTION_AWS_ACCESS_KEY_ID = keyId;
+        process.env.REMOTION_AWS_SECRET_ACCESS_KEY = secret;
+      }
+
+      console.log("AccessKeyId:", keyId.slice(0, 5) + "...");
+      console.log("SecretAccessKey length:", secret.length);
+
       // Dynamic import to avoid build issues if package specific constraints
       const { renderMediaOnLambda, getRenderProgress } = await import('@remotion/lambda/client');
 
@@ -266,7 +286,7 @@ export const generateVideo = inngest.createFunction(
         durationInFrames // Pass duration in props for calculateMetadata
       };
 
-      console.log("Starting Lambda Render...");
+      console.log(`Starting Lambda Render... Duration: ${durationInFrames} frames (${(durationInFrames / 30).toFixed(1)}s)`);
 
       const { renderId, bucketName } = await renderMediaOnLambda({
         region: region as any,
@@ -278,7 +298,7 @@ export const generateVideo = inngest.createFunction(
         maxRetries: 1,
         concurrencyPerLambda: 1,
         framesPerLambda: 2000,
-      });
+      } as any);
 
       console.log(`Render started: ${renderId} in ${bucketName}`);
 
@@ -286,14 +306,14 @@ export const generateVideo = inngest.createFunction(
       let videoUrl: string | null = null;
       let attempts = 0;
 
-      while (!videoUrl && attempts < 60) { // Timeout after ~5 minutes
+      while (!videoUrl && attempts < 240) { // Timeout after ~20 minutes (matches Lambda 15min + buffer)
         await new Promise(r => setTimeout(r, 5000));
         attempts++;
 
         const progress = await getRenderProgress({
           renderId,
           bucketName,
-          functionName,
+          functionName: functionName!,
           region: region as any,
         });
 
@@ -318,7 +338,6 @@ export const generateVideo = inngest.createFunction(
       return { videoUrl };
     });
 
-
     // Step 6: Save to DB (split updates + retry)
     const savedProject = await step.run("save-project", async () => {
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -341,8 +360,8 @@ export const generateVideo = inngest.createFunction(
         const patch: any = {
           voice_url: voice.audioUrl,
           image_urls: images.imageUrls,
-          status: video.videoUrl ? "completed" : "processing", // Only complete if video rendered
-          video_url: video.videoUrl
+          status: video?.videoUrl ? "completed" : "processing", // Only complete if video rendered
+          video_url: video?.videoUrl
         };
         // Only save script_data if we actually have a script (avoid overwriting in reuseOnly stub)
         if (scriptData?.script && String(scriptData.script).trim()) patch.script_data = scriptData;
@@ -357,7 +376,7 @@ export const generateVideo = inngest.createFunction(
       });
 
       // Status update logic moved above
-      if (video.videoUrl) {
+      if (video?.videoUrl) {
         await runWithRetry("final-status", async () => {
           const { error } = await supabaseAdmin.from("video_projects").update({ status: "completed" }).eq("id", projectId);
           if (error) throw new Error(error.message);
@@ -366,6 +385,42 @@ export const generateVideo = inngest.createFunction(
 
       return { status: "completed" };
     });
+
+    // Step 7: Send Email Notification [NEW]
+    if (video?.videoUrl && plunk) {
+      await step.run("send-email", async () => {
+        // 1. Fetch user email
+        const { data: user, error: userErr } = await supabaseAdmin
+          .from("users")
+          .select("email, name") // Select name too if available
+          .eq("user_id", project.user_id) // primary key linkage
+          .single();
+
+        if (userErr || !user?.email) {
+          console.warn("Could not find user email for notification:", userErr);
+          return { sent: false, reason: "user_not_found" };
+        }
+
+        // 2. Render email
+        const emailHtml = await render(
+          VideoReadyEmail({
+            videoUrl: video!.videoUrl!,
+            videoTitle: scriptData.videoTitle,
+            thumbnailUrl: images.imageUrls?.[0], // Use first image as thumbnail
+            userName: user.name || "Creator",
+          })
+        );
+
+        // 3. Send via Plunk
+        const result = await plunk!.emails.send({
+          to: user.email,
+          subject: "Your video is ready! 🎬",
+          body: emailHtml,
+        });
+
+        return { sent: true, result };
+      });
+    }
 
     return { success: true, projectId, script: scriptData, voice, captions, images, video, savedProject };
   }
