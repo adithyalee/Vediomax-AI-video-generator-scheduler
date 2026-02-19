@@ -8,9 +8,9 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="Main"
                 component={Main}
-                durationInFrames={300} // Fallback
+                durationInFrames={1800} // Default to 60s (safeguard)
                 calculateMetadata={async ({ props }) => {
-                    const durationInFrames = props.durationInFrames || 300;
+                    const durationInFrames = props.durationInFrames ? Number(props.durationInFrames) : 1800;
                     return {
                         durationInFrames,
                         props

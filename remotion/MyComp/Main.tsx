@@ -21,6 +21,7 @@ export const Main: React.FC<z.infer<typeof myCompSchema>> = ({ imageUrls, audioU
 
     // Calculate duration per image (simple even split for now)
     const totalImages = imageUrls.length || 1;
+    // Ensure we use the full duration passed from the root
     const durationPerImage = Math.floor(durationInFrames / totalImages);
 
     return (

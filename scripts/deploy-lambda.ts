@@ -1,5 +1,6 @@
 import { deployFunction, deploySite, getOrCreateBucket } from '@remotion/lambda';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { VERSION } from 'remotion/version';
 
@@ -10,7 +11,7 @@ dotenv.config({ path: '.env.local' });
 async function main() {
     console.log('Starting Remotion Lambda deployment...');
 
-    const region = process.env.REMOTION_AWS_REGION || 'us-east-1';
+    const region = (process.env.REMOTION_AWS_REGION || 'us-east-1') as any;
 
     // 1. Get or Create Bucket
     const { bucketName } = await getOrCreateBucket({
@@ -23,9 +24,8 @@ async function main() {
         createCloudWatchLogGroup: true,
         memorySizeInMb: 2048,
         region,
-        timeoutInSeconds: 240,
-        version: VERSION,
-    });
+        timeoutInSeconds: 900,
+    } as any);
     console.log(`Function deployed: ${functionName} (Existed: ${alreadyExisted})`);
 
     // 3. Deploy Site (The Remotion Project)
@@ -33,7 +33,7 @@ async function main() {
         bucketName,
         entryPoint: path.join(process.cwd(), 'remotion', 'root.tsx'),
         region,
-        siteName: 'vediomax-render',
+        siteName: 'vediomax',
     });
     console.log(`Site deployed: ${siteName}`);
     console.log(`Serve URL: ${serveUrl}`);
@@ -45,8 +45,23 @@ async function main() {
     console.log(`Function: ${functionName}`);
     console.log(`Serve URL: ${serveUrl}`);
 
-    // Save these to .env.local or just output them for the user to copy
-    // For automation, we might want to append them, but for now console is fine.
+    // Auto-update .env.local with the new values
+    const envPath = path.join(process.cwd(), '.env.local');
+    let envContent = fs.readFileSync(envPath, 'utf-8');
+
+    // Update REMOTION_SERVE_URL
+    envContent = envContent.replace(
+        /^REMOTION_SERVE_URL=.*/m,
+        `REMOTION_SERVE_URL=${serveUrl}`
+    );
+    // Update REMOTION_FUNCTION_NAME
+    envContent = envContent.replace(
+        /^REMOTION_FUNCTION_NAME=.*/m,
+        `REMOTION_FUNCTION_NAME=${functionName}`
+    );
+
+    fs.writeFileSync(envPath, envContent);
+    console.log('\n.env.local updated automatically!');
 }
 
 main().catch((err) => {
