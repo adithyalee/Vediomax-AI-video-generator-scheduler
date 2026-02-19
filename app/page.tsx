@@ -83,9 +83,11 @@ export default function Home() {
                   </Button>
                 </Link>
               </SignedIn>
-              <Button size="lg" variant="outline" className="h-12 px-8 text-lg gap-2 border-white/20 hover:bg-white/10 hover:text-white">
-                <Play className="h-4 w-4" /> Watch Demo
-              </Button>
+              <a href="#features">
+                <Button size="lg" variant="outline" className="h-12 px-8 text-lg gap-2 border-white/20 hover:bg-white/10 hover:text-white">
+                  <Play className="h-4 w-4" /> Watch Demo
+                </Button>
+              </a>
             </div>
 
             <div className="flex items-center gap-8 pt-8 text-muted-foreground grayscale opacity-70">
@@ -197,29 +199,28 @@ export default function Home() {
             <div className="space-y-4">
               <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Product</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><Link href="#" className="hover:text-white transition-colors">Features</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Integrations</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Changelog</Link></li>
+                <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/dashboard/settings" className="hover:text-white transition-colors">Integrations</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
               </ul>
             </div>
 
             <div className="space-y-4">
               <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Company</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><Link href="#" className="hover:text-white transition-colors">About</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="#about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/dashboard/billing" className="hover:text-white transition-colors">Upgrade</Link></li>
+                <li><Link href="mailto:support@vediomax.com" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
 
             <div className="space-y-4">
               <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200">Legal</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+                <li><span className="text-slate-600 cursor-default">Privacy Policy</span></li>
+                <li><span className="text-slate-600 cursor-default">Terms of Service</span></li>
+                <li><span className="text-slate-600 cursor-default">Cookie Policy</span></li>
               </ul>
             </div>
           </div>

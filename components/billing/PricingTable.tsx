@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/nextjs';
+import { toast } from 'sonner';
 
 const pricingPlans = [
     {
@@ -66,10 +67,13 @@ export function PricingTable({ currentTier }: PricingTableProps) {
 
     const handleUpgrade = (planName: string) => {
         setLoading(planName);
-        // Simulation of redirect to payment provider
+        // TODO: Replace with real Stripe/LemonSqueezy checkout redirect
         setTimeout(() => {
             setLoading(null);
-            alert(`Redirecting to ${planName} checkout... (This is a demo)`);
+            toast.info(`Payment integration coming soon!`, {
+                description: `${planName} plan checkout will be available shortly. Contact us to upgrade manually.`,
+                duration: 5000,
+            });
         }, 1500);
     };
 

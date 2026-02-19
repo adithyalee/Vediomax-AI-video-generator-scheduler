@@ -139,7 +139,8 @@ export function VideoList({ initialVideos }: VideoListProps) {
                         <div className="pt-2">
                             <Button
                                 className="w-full bg-slate-800 hover:bg-indigo-600 text-white transition-colors"
-                                disabled={video.status === 'processing'}
+                                disabled={video.status === 'processing' || !video.video_url}
+                                onClick={() => video.video_url && window.open(video.video_url, '_blank')}
                             >
                                 {video.status === 'processing' ? 'Generating...' : 'View Video'}
                             </Button>
