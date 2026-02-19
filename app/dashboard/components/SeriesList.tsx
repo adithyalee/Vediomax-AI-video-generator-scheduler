@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { VideoProject } from '../types';
 import { SeriesCard } from './SeriesCard';
-import { TestCard } from './TestCard';
 import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -32,15 +31,39 @@ export function SeriesList() {
         fetchSeries();
     }, []);
 
-    const handleDelete = (id: string) => {
-        setSeries(prev => prev.filter(s => s.id !== id));
-        toast.success("Series deleted");
+    const handleDelete = async (id: string) => {
+        try {
+            const res = await fetch('/api/video-series', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+            if (!res.ok) throw new Error('Delete failed');
+
+            setSeries(prev => prev.filter(s => s.id !== id));
+            toast.success('Series deleted');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete series');
+        }
     };
 
-    const handleTogglePause = (id: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'paused' ? 'active' : 'paused';
-        setSeries(prev => prev.map(s => s.id === id ? { ...s, status: newStatus as any } : s));
-        toast.success(newStatus === 'paused' ? "Series paused" : "Series resumed");
+    const handleTogglePause = async (id: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'paused' ? 'pending' : 'paused';
+        try {
+            const res = await fetch('/api/video-series', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status: newStatus }),
+            });
+            if (!res.ok) throw new Error('Update failed');
+
+            setSeries(prev => prev.map(s => s.id === id ? { ...s, status: newStatus as any } : s));
+            toast.success(newStatus === 'paused' ? 'Series paused' : 'Series resumed');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update series status');
+        }
     };
 
     if (isLoading) {
@@ -80,7 +103,6 @@ export function SeriesList() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <TestCard series={series} />
             {series.map((project: VideoProject) => (
                 <SeriesCard
                     key={project.id}
@@ -92,3 +114,4 @@ export function SeriesList() {
         </div>
     );
 }
+

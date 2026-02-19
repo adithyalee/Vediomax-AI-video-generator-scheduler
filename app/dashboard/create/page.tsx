@@ -32,7 +32,9 @@ const STEPS = [
 ];
 
 
-export default function CreateSeriesPage() {
+import { Suspense } from 'react';
+
+function CreateSeriesContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const seriesId = searchParams.get('id');
@@ -209,5 +211,13 @@ export default function CreateSeriesPage() {
                 description="You've reached the maximum number of series for your current plan."
             />
         </div>
+    );
+}
+
+export default function CreateSeriesPage() {
+    return (
+        <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+            <CreateSeriesContent />
+        </Suspense>
     );
 }
