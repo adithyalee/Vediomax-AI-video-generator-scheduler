@@ -15,6 +15,11 @@ import { WizardData } from './types';
 import { scheduleSeries, getSeriesById, updateSeries } from './actions';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { UpgradeModal } from '@/components/UpgradeModal';
+
+function isRedirectError(error: any) {
+    return error?.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT');
+}
 
 
 const STEPS = [
@@ -35,6 +40,7 @@ export default function CreateSeriesPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const [isPending, startTransition] = React.useTransition();
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
     // Initial State
     const [wizardData, setWizardData] = useState<WizardData>({
@@ -194,6 +200,13 @@ export default function CreateSeriesPage() {
                 onNext={handleNext}
                 onBack={handleBack}
                 nextLabel={currentStep === 6 ? (seriesId ? 'Update Series' : 'Schedule') : 'Continue'}
+            />
+
+            <UpgradeModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                title="Limit Reached"
+                description="You've reached the maximum number of series for your current plan."
             />
         </div>
     );

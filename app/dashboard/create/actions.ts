@@ -12,6 +12,18 @@ export async function scheduleSeries(data: WizardData) {
         throw new Error('User not authenticated');
     }
 
+    // Check subscription limits
+    const { canCreateSeries } = await import('@/lib/subscription');
+    const { allowed, limit } = await canCreateSeries(userId);
+
+    if (!allowed) {
+        return {
+            success: false,
+            error: `Plan limit reached: You can only create ${limit} series on your current plan.`,
+            code: 'LIMIT_REACHED'
+        };
+    }
+
     // Insert into Supabase
     const { error } = await supabaseAdmin.from('video_projects').insert({
         user_id: userId, // Explicitly set user_id from Clerk
