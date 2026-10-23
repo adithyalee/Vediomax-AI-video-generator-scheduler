@@ -1,4 +1,4 @@
-# 🎬 Vediomax
+# Vediomax
 
 An automated short-form video series generator that compiles scripts, voiceovers, captions, and AI-generated images into complete, publishable videos.
 
@@ -10,7 +10,7 @@ An automated short-form video series generator that compiles scripts, voiceovers
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 - [Project Overview](#-project-overview)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
@@ -25,7 +25,7 @@ An automated short-form video series generator that compiles scripts, voiceovers
 
 ---
 
-## 🔍 Project Overview
+## Project Overview
 
 Vediomax is an AI-powered short-form video "series" generator. The platform is designed to automate the process of creating and rendering content for platforms like YouTube Shorts, TikTok, and Instagram Reels. 
 
@@ -39,7 +39,7 @@ Creating consistent short-form video content is incredibly time-consuming, requi
 
 ---
 
-## 📦 Features
+## Features
 
 - **Dynamic Series Wizard:** A 6-step wizard flow for users to define their video's topic, language/voice, artistic style, captions, and automated schedule.
 - **Gemini AI Scripting:** Automatically writes engaging scripts customized to the selected topic and style.
@@ -54,7 +54,7 @@ Creating consistent short-form video content is incredibly time-consuming, requi
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Core Framework:** Next.js (App Router, React 19)
 - **Styling & UI:** Vanilla CSS, TailwindCSS, Radix UI, Framer Motion, shadcn/ui
@@ -72,7 +72,7 @@ Creating consistent short-form video content is incredibly time-consuming, requi
 
 ---
 
-## 📥 Installation
+## Installation
 
 Follow these steps to set up Vediomax locally:
 
@@ -96,7 +96,7 @@ Follow these steps to set up Vediomax locally:
 
 ---
 
-## ▶️ Usage
+## ▶Usage
 
 ### Run the App Locally
 
@@ -131,7 +131,7 @@ npm run deploy:lambda
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 vediomax/
@@ -163,7 +163,7 @@ vediomax/
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Define the following environment variables in your `.env.local` file:
 
@@ -212,7 +212,7 @@ The main database tables configured in Supabase are:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -223,7 +223,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 - [ ] Actual **video assembly** (FFmpeg) to combine images + voice + captions into a final video file.
 - [ ] Persisted **delete/pause** actions in the Dashboard UI (currently local state only).
@@ -234,13 +234,13 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## 📬 Contact
+## Contact
 
 **Vediomax Project Maintainer**
 - GitHub: [yourusername](https://github.com/yourusername)
