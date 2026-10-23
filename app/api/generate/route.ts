@@ -1,15 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { inngest } from "@/inngest/client";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { projectId, force, reuseOnly } = await req.json();
 
         if (!projectId) {
             return NextResponse.json({ error: "ProjectId is required" }, { status: 400 });
         }
 
-        console.log("Received generate request for project:", projectId);
+        const { data: project } = await supabaseAdmin
+            .from("video_projects")
+            .select("id")
+            .eq("id", projectId)
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        if (!project) {
+            return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
 
         const sent = await inngest.send({
             name: "app/video.generate",

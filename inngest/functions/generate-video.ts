@@ -253,15 +253,12 @@ export const generateVideo = inngest.createFunction(
       const keyId = process.env.AWS_ACCESS_KEY_ID;
       const secret = process.env.AWS_SECRET_ACCESS_KEY;
 
-      console.log("AccessKeyId:", keyId ? keyId.slice(0, 5) + "..." : "MISSING");
       // Force-set REMOTION_ prefixed env vars to ensure Remotion Lambda picks them up
       if (keyId && secret) {
         process.env.REMOTION_AWS_ACCESS_KEY_ID = keyId;
         process.env.REMOTION_AWS_SECRET_ACCESS_KEY = secret;
       }
 
-      console.log("AccessKeyId:", keyId ? keyId.slice(0, 5) + "..." : "MISSING");
-      console.log("SecretAccessKey length:", secret ? secret.length : 0);
 
       // Dynamic import to avoid build issues if package specific constraints
       const { renderMediaOnLambda, getRenderProgress } = await import('@remotion/lambda/client');

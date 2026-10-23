@@ -12,7 +12,7 @@ async function testFonoda() {
     }
 
     console.log("Testing Fonoda TTS...");
-    console.log(`Using API Key: ${apiKey.substring(0, 5)}...`);
+    console.log(`Using API key: set`);
 
     try {
         const text = "क्या आपने कभी सोचा है कि अगर हर ज़रूरी जानकारी, मौसम से लेकर ताज़ा खबरों तक, सिर्फ़ एक कमांड पर मिल जाए, तो आपका रोज़मर्रा का जीवन कितना आसान और मज़ेदार हो सकता है?";

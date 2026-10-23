@@ -12,7 +12,7 @@ async function testDeepgram() {
     }
 
     console.log("Testing Deepgram TTS...");
-    console.log(`Using API Key: ${apiKey.substring(0, 5)}...`);
+    console.log(`Using API key: set`);
 
     try {
         const text = "Hello! This is a test of the Deepgram voice generation.";

@@ -112,7 +112,7 @@ Required server-side keys (examples only):
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `DEEPGRAM_API_KEY`
 - `FONODA_API_KEY` (if using Fonada languages)
-- `NEXT_PUBLIC_GEMINI_API_KEY`
+- `GEMINI_API_KEY`
 - `REPLICATE_API_TOKEN`
 
 If a token/key is ever pasted into chat or logs, **rotate it immediately**.

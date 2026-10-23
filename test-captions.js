@@ -16,7 +16,7 @@ async function testCaptions() {
     const audioUrl = "https://static.deepgram.com/examples/interview_speech-analytics.wav";
 
     console.log("Testing Deepgram Captions...");
-    console.log(`Using API Key: ${apiKey.substring(0, 5)}...`);
+    console.log(`Using API key: set`);
     console.log(`Audio URL: ${audioUrl}`);
 
     try {
