@@ -242,7 +242,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-**Vediomax Project Maintainer**
-- GitHub: [yourusername](https://github.com/yourusername)
-- Email: support@vediomax.com
-- Project Link: [https://github.com/yourusername/vediomax](https://github.com/yourusername/vediomax)
+Adithya Thaninki, [@adithyalee](https://github.com/adithyalee), adithya040@gmail.com
